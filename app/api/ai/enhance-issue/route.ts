@@ -1,43 +1,43 @@
 import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const genAI = process.env.GEMINI_API_KEY
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
   : null
 
 export async function POST(req: Request) {
   const { text } = await req.json()
 
-  if (openai) {
+  if (genAI) {
     try {
-      const completion = await openai.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert Technical Product Manager at a high-growth tech company. 
-            Your goal is to take a rough issue description and transform it into a professional, engineering-ready ticket.
-            
-            Return a JSON object with the following structure:
-            {
-              "title": "Concise, action-oriented title (e.g., 'Fix login race condition')",
-              "description": "Detailed description using Markdown. Include 'Context', 'Problem', and 'Proposed Solution' sections. Be professional and concise.",
-              "acceptanceCriteria": ["List of verifyable checks"],
-              "priority": "Low" | "Medium" | "High" | "Urgent",
-              "labels": ["List", "of", "relevant", "labels"],
-              "complexity": "1" | "2" | "3" | "5" | "8" (Fibonacci estimate)
-            }`
-          },
-          { role: "user", content: `Enhance this issue: "${text}"` }
-        ],
-        model: "gpt-3.5-turbo",
-        response_format: { type: "json_object" },
-        temperature: 0.7,
-      });
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-      const content = completion.choices[0].message.content
+      const prompt = `
+        You are an expert Technical Product Manager at a high-growth tech company. 
+        Your goal is to take a rough issue description and transform it into a professional, engineering-ready ticket.
+        
+        Input Issue: "${text}"
+
+        Return a valid JSON object (no markdown formatting, just raw JSON) with the following structure:
+        {
+          "title": "Concise, action-oriented title",
+          "description": "Detailed description using Markdown. Include 'Context', 'Problem', and 'Proposed Solution' sections.",
+          "acceptanceCriteria": ["List of verifyable checks"],
+          "priority": "Low" | "Medium" | "High" | "Urgent",
+          "labels": ["List", "of", "relevant", "labels"],
+          "complexity": "1" | "2" | "3" | "5" | "8"
+        }
+      `;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      let textResponse = response.text();
+
+      // Clean up markdown code blocks if Gemini includes them
+      textResponse = textResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
 
       try {
-        const parsed = JSON.parse(content || '{}')
+        const parsed = JSON.parse(textResponse || '{}')
         const formattedDescription = `
 ${parsed.description}
 
@@ -51,23 +51,23 @@ ${parsed.acceptanceCriteria?.map((c: string) => `- [ ] ${c}`).join('\n') || '- [
         })
       } catch (e) {
         console.error("JSON Parse Error", e)
+        console.log("Raw Response:", textResponse)
         return NextResponse.json({
           title: text.slice(0, 50),
-          description: content || "Enhanced description",
+          description: textResponse || "Enhanced description",
           priority: "Medium",
           labels: ["ai-error"]
         })
       }
     } catch (e) {
-      console.error("OpenAI Error:", e)
-      // Fallback
+      console.error("Gemini Error:", e)
     }
   }
 
   // Fallback / Mock
   return NextResponse.json({
     title: text.length > 20 ? text.slice(0, 20) + "..." : text,
-    description: "AI enhancement requires OPENAI_API_KEY. \n\nOriginal: " + text,
+    description: "AI enhancement requires GEMINI_API_KEY. \n\nOriginal: " + text,
     priority: "Medium",
     labels: ["mock", "demo"]
   })

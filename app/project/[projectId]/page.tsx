@@ -3,19 +3,60 @@ import { useEffect, useState } from 'react'
 import { Plus, Command, MoreHorizontal, CheckCircle2, Circle } from 'lucide-react'
 import AISidebar from '../../../components/AISidebar'
 
+import { supabase } from '@/utils/supabase'
+
 export default function Project({ params }: any) {
   const [issues, setIssues] = useState<any[]>([])
   const [text, setText] = useState('')
+  const [project, setProject] = useState<any>(null)
+
+  useEffect(() => {
+    if (!supabase) return
+
+    async function loadData() {
+      // 1. Get Project ID from Slug
+      const { data: p } = await supabase.from('projects').select('*').eq('slug', params.projectId).single()
+      if (p) {
+        setProject(p)
+        // 2. Get Issues for Project
+        const { data: i } = await supabase.from('issues').select('*').eq('project_id', p.id).order('created_at', { ascending: false })
+        if (i) setIssues(i)
+      }
+    }
+    loadData()
+  }, [params.projectId])
 
   async function createWithAI() {
     if (!text) return
+
+    // Optimistic UI could go here, but let's wait for AI for now
     const res = await fetch('/api/ai/enhance-issue', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text })
     })
-    const data = await res.json()
-    setIssues([...issues, data])
+    const aiData = await res.json()
+
+    if (supabase && project) {
+      // Save to Supabase
+      const { data: savedIssue, error } = await supabase.from('issues').insert({
+        title: aiData.title,
+        description: aiData.description,
+        priority: aiData.priority,
+        project_id: project.id,
+        status: 'Backlog'
+      }).select().single()
+
+      if (savedIssue) {
+        setIssues(prev => [savedIssue, ...prev])
+      } else if (error) {
+        console.error(error)
+        alert('Failed to save issue')
+      }
+    } else {
+      // Fallback Local State
+      setIssues(prev => [aiData, ...prev])
+    }
     setText('')
   }
 

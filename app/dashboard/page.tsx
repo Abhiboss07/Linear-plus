@@ -12,6 +12,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!supabase) return
     async function load() {
+      if (!supabase) return
       const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false })
       if (data && data.length > 0) setProjects(data)
     }

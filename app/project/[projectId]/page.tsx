@@ -14,6 +14,7 @@ export default function Project({ params }: any) {
     if (!supabase) return
 
     async function loadData() {
+      if (!supabase) return
       // 1. Get Project ID from Slug
       const { data: p } = await supabase.from('projects').select('*').eq('slug', params.projectId).single()
       if (p) {

@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     try {
       const completion = await openai.chat.completions.create({
         messages: [
-          { role: "system", content: "You are a Linear-like issue tracking assistant. Be concise, professional, and helpful." },
+          { role: "system", content: "You are 'Linear+', an advanced AI Product Manager assistant. Your goal is to help users prioritize work, break down complex tasks, and spot duplicate issues. Be concise, professional, and data-driven. Use bullet points for clarity." },
           { role: "user", content: message }
         ],
         model: "gpt-3.5-turbo",

@@ -12,34 +12,50 @@ export async function POST(req: Request) {
     try {
       const completion = await openai.chat.completions.create({
         messages: [
-          { role: "system", content: "You are a project manager. Enhance the following issue description to be more professional, providing a concise Title, a detailed Description, a Priority (Low, Medium, High), and suggested Labels." },
-          { role: "user", content: text }
+          {
+            role: "system",
+            content: `You are an expert Technical Product Manager at a high-growth tech company. 
+            Your goal is to take a rough issue description and transform it into a professional, engineering-ready ticket.
+            
+            Return a JSON object with the following structure:
+            {
+              "title": "Concise, action-oriented title (e.g., 'Fix login race condition')",
+              "description": "Detailed description using Markdown. Include 'Context', 'Problem', and 'Proposed Solution' sections. Be professional and concise.",
+              "acceptanceCriteria": ["List of verifyable checks"],
+              "priority": "Low" | "Medium" | "High" | "Urgent",
+              "labels": ["List", "of", "relevant", "labels"],
+              "complexity": "1" | "2" | "3" | "5" | "8" (Fibonacci estimate)
+            }`
+          },
+          { role: "user", content: `Enhance this issue: "${text}"` }
         ],
         model: "gpt-3.5-turbo",
         response_format: { type: "json_object" },
-        // Note: For older models without json_object, we'd prompt differently. 
-        // Assuming user might use newer keys. If not, text parsing is needed. 
-        // For robustness, let's ask for JSON in prompt.
+        temperature: 0.7,
       });
 
-      // Simple mock-like parsing if JSON mode isn't perfect or needed for simple prompt
-      // But for "Real AI", let's assume we get a text we can parse or just return the text as description.
-      // Better: Return a structured JSON.
-
       const content = completion.choices[0].message.content
-      // This is a simplified example. In production, use Zod or robust JSON parsing.
-      // For this demo, let's try to parse it if valid JSON, else raw.
 
       try {
         const parsed = JSON.parse(content || '{}')
-        return NextResponse.json(parsed)
+        const formattedDescription = `
+${parsed.description}
+
+### Acceptance Criteria
+${parsed.acceptanceCriteria?.map((c: string) => `- [ ] ${c}`).join('\n') || '- [ ] Verify the fix'}
+        `.trim()
+
+        return NextResponse.json({
+          ...parsed,
+          description: formattedDescription
+        })
       } catch (e) {
-        // Fallback if AI didn't return valid JSON
+        console.error("JSON Parse Error", e)
         return NextResponse.json({
           title: text.slice(0, 50),
           description: content || "Enhanced description",
           priority: "Medium",
-          labels: ["ai-generated"]
+          labels: ["ai-error"]
         })
       }
     } catch (e) {

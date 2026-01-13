@@ -1,9 +1,9 @@
 {
   "/_not-found": "app/_not-found.js",
-  "/api/ai/assistant/route": "app/api/ai/assistant/route.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/project/[projectId]/page": "app/project/[projectId]/page.js",
-  "/api/ai/enhance-issue/route": "app/api/ai/enhance-issue/route.js",
+  "/page": "app/page.js",
+  "/api/ai/assistant/route": "app/api/ai/assistant/route.js",
   "/login/page": "app/login/page.js",
-  "/page": "app/page.js"
+  "/project/[projectId]/page": "app/project/[projectId]/page.js",
+  "/api/ai/enhance-issue/route": "app/api/ai/enhance-issue/route.js"
 }

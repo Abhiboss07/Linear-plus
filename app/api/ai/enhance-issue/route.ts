@@ -65,7 +65,7 @@ ${parsed.acceptanceCriteria?.map((c: string) => `- [ ] ${c}`).join('\n') || '- [
   // Fallback / Mock
   return NextResponse.json({
     title: text.length > 20 ? text.slice(0, 20) + "..." : text,
-    description: "AI enhancement requires GEMINI_API_KEY. \n\nOriginal: " + text,
+    description: `Debug: Key present? ${!!apiKey}. Original: ${text}`,
     priority: "Medium",
     labels: ["mock", "demo"]
   })

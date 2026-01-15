@@ -23,12 +23,15 @@ export async function POST(req: Request) {
       return NextResponse.json({
         reply: text
       })
-    } catch (e) {
+    } catch (e: any) {
       console.error("Gemini Error:", e)
+      return NextResponse.json({
+        reply: `Error: ${e.message || "Unknown error occurred with Gemini API"}`
+      })
     }
   }
 
   return NextResponse.json({
-    reply: "I am a demo AI. Set GEMINI_API_KEY to make me real. You said: " + message
+    reply: `Msg: ${message}. Debug: Key present? ${!!apiKey}`
   })
 }

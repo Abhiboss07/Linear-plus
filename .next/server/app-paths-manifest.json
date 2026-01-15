@@ -1,1 +1,6 @@
-{}
+{
+  "/page": "app/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/project/[projectId]/page": "app/project/[projectId]/page.js",
+  "/api/ai/enhance-issue/route": "app/api/ai/enhance-issue/route.js"
+}
